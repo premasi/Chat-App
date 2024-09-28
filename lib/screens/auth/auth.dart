@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
+final _firebase = FirebaseAuth.instance;
 
 class Auth extends StatefulWidget {
   const Auth({super.key});
@@ -14,11 +17,76 @@ class _AuthState extends State<Auth> {
   var _isLogin = true;
   var _enteredEmail = '';
   var _enteredPassword = '';
-  void _submit() {
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  void _submit() async {
     final isValid = _formKey.currentState!.validate();
     if (isValid) {
       _formKey.currentState!.save();
-      print(_enteredEmail);
+      if (_isLogin) {
+        try {
+          final _userCredential = await _firebase.signInWithEmailAndPassword(
+              email: _enteredEmail, password: _enteredPassword);
+          _emailController.clear();
+          _passwordController.clear();
+          ScaffoldMessenger.of(context).clearSnackBars();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Login success!"),
+            ),
+          );
+        } on FirebaseAuthException catch (e) {
+          var _message = "";
+          switch (e.code) {
+            case "invalid-email":
+              _message = e.message!;
+            case "user-disabled":
+              _message = e.message!;
+            case "user-not-found":
+              _message = e.message!;
+            default:
+              _message = "Login failed";
+          }
+          ScaffoldMessenger.of(context).clearSnackBars();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(_message),
+            ),
+          );
+        }
+      } else {
+        try {
+          final _userCredential =
+              await _firebase.createUserWithEmailAndPassword(
+                  email: _enteredEmail, password: _enteredPassword);
+          _emailController.clear();
+          _passwordController.clear();
+          ScaffoldMessenger.of(context).clearSnackBars();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Create account success!"),
+            ),
+          );
+        } on FirebaseAuthException catch (e) {
+          var _message = "";
+          switch (e.code) {
+            case "email-already-in-use":
+              _message = e.message!;
+            case "invalid-email":
+              _message = e.message!;
+            case "weak-password":
+              _message = e.message!;
+            default:
+              _message = "Register failed";
+          }
+          ScaffoldMessenger.of(context).clearSnackBars();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(_message),
+            ),
+          );
+        }
+      }
     }
   }
 
@@ -47,6 +115,7 @@ class _AuthState extends State<Auth> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           TextFormField(
+                            controller: _emailController,
                             decoration:
                                 const InputDecoration(labelText: 'Email'),
                             keyboardType: TextInputType.emailAddress,
@@ -68,6 +137,7 @@ class _AuthState extends State<Auth> {
                             height: 8,
                           ),
                           TextFormField(
+                            controller: _passwordController,
                             decoration:
                                 const InputDecoration(labelText: 'Password'),
                             obscureText: true,

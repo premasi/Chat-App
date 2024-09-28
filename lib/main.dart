@@ -1,7 +1,13 @@
 import 'package:chat_app/screens/auth/auth.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    demoProjectId: "demo-project-id",
+  );
   runApp(const MyApp());
 }
 
