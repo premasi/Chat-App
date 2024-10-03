@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class Home extends StatelessWidget {
@@ -9,9 +10,17 @@ class Home extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.purple,
         title: const Text(
-          "Chatting",
+          "Chat App",
           style: TextStyle(color: Colors.white),
         ),
+        actions: [
+          IconButton(
+              onPressed: FirebaseAuth.instance.signOut,
+              icon: const Icon(
+                Icons.exit_to_app,
+                color: Colors.white,
+              ))
+        ],
       ),
       body: const Center(
         child: Text("chatting nich"),

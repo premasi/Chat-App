@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class Splash extends StatelessWidget {
@@ -10,7 +11,10 @@ class Splash extends StatelessWidget {
         backgroundColor: Colors.purple,
       ),
       body: const Center(
-        child: Text("Loading..."),
+        child: Text(
+          "Loading...",
+          style: TextStyle(color: Colors.white),
+        ),
       ),
     );
   }
