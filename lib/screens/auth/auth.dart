@@ -1,3 +1,7 @@
+import 'dart:io';
+
+import 'package:chat_app/widgets/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -17,6 +21,7 @@ class _AuthState extends State<Auth> {
   var _isLogin = true;
   var _enteredEmail = '';
   var _enteredPassword = '';
+  File? _selectedImage;
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   void _submit() async {
@@ -56,9 +61,24 @@ class _AuthState extends State<Auth> {
         }
       } else {
         try {
+          if (!_isLogin && _selectedImage == null) {
+            ScaffoldMessenger.of(context).clearSnackBars();
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text("Please pick the image"),
+              ),
+            );
+          }
           final _userCredential =
               await _firebase.createUserWithEmailAndPassword(
                   email: _enteredEmail, password: _enteredPassword);
+          final storageRef = FirebaseStorage.instance
+              .ref()
+              .child("user_images")
+              .child("${_userCredential.user?.uid}.jpg");
+          await storageRef.putFile(_selectedImage!);
+          final imageUrl = await storageRef.getDownloadURL();
+          print(imageUrl);
           _emailController.clear();
           _passwordController.clear();
           ScaffoldMessenger.of(context).clearSnackBars();
@@ -114,6 +134,12 @@ class _AuthState extends State<Auth> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
+                          if (!_isLogin)
+                            ImagePickerScreen(
+                              onImageSelect: (pickedImage) {
+                                _selectedImage = pickedImage;
+                              },
+                            ),
                           TextFormField(
                             controller: _emailController,
                             decoration:
