@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:chat_app/widgets/image_picker.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -21,13 +22,19 @@ class _AuthState extends State<Auth> {
   var _isLogin = true;
   var _enteredEmail = '';
   var _enteredPassword = '';
+  var _enteredUsername = "";
   File? _selectedImage;
+  final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  var _isLoading = false;
   void _submit() async {
     final isValid = _formKey.currentState!.validate();
     if (isValid) {
       _formKey.currentState!.save();
+      setState(() {
+        _isLoading = true;
+      });
       if (_isLogin) {
         try {
           final _userCredential = await _firebase.signInWithEmailAndPassword(
@@ -78,9 +85,20 @@ class _AuthState extends State<Auth> {
               .child("${_userCredential.user?.uid}.jpg");
           await storageRef.putFile(_selectedImage!);
           final imageUrl = await storageRef.getDownloadURL();
+          await FirebaseFirestore.instance
+              .collection("users")
+              .doc(_userCredential.user?.uid)
+              .set(
+            {
+              'user_name': _enteredUsername,
+              'email': _enteredEmail,
+              'image_url': imageUrl,
+            },
+          );
           print(imageUrl);
           _emailController.clear();
           _passwordController.clear();
+          _usernameController.clear();
           ScaffoldMessenger.of(context).clearSnackBars();
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -106,6 +124,9 @@ class _AuthState extends State<Auth> {
             ),
           );
         }
+        setState(() {
+          _isLoading = false;
+        });
       }
     }
   }
@@ -138,6 +159,24 @@ class _AuthState extends State<Auth> {
                             ImagePickerScreen(
                               onImageSelect: (pickedImage) {
                                 _selectedImage = pickedImage;
+                              },
+                            ),
+                          if (!_isLogin)
+                            TextFormField(
+                              controller: _usernameController,
+                              autocorrect: false,
+                              textCapitalization: TextCapitalization.none,
+                              decoration:
+                                  const InputDecoration(labelText: "Username"),
+                              keyboardType: TextInputType.text,
+                              validator: (value) {
+                                if (value == null || value.length < 1) {
+                                  return "Please input your username";
+                                }
+                                return null;
+                              },
+                              onSaved: (newValue) {
+                                _enteredUsername = newValue!;
                               },
                             ),
                           TextFormField(
@@ -178,27 +217,30 @@ class _AuthState extends State<Auth> {
                           const SizedBox(
                             height: 16,
                           ),
-                          ElevatedButton(
-                            onPressed: _submit,
-                            style: ElevatedButton.styleFrom(
-                                backgroundColor: Theme.of(context)
-                                    .colorScheme
-                                    .primaryContainer),
-                            child: Text(_isLogin ? "Sign In" : "Sign Up"),
-                          ),
+                          if (_isLoading) const LinearProgressIndicator(),
+                          if (!_isLoading)
+                            ElevatedButton(
+                              onPressed: _submit,
+                              style: ElevatedButton.styleFrom(
+                                  backgroundColor: Theme.of(context)
+                                      .colorScheme
+                                      .primaryContainer),
+                              child: Text(_isLogin ? "Sign In" : "Sign Up"),
+                            ),
                           const SizedBox(
                             height: 8,
                           ),
-                          TextButton(
-                            onPressed: () {
-                              setState(() {
-                                _isLogin = !_isLogin;
-                              });
-                            },
-                            child: Text(_isLogin
-                                ? 'Create an account'
-                                : 'Already have an account'),
-                          )
+                          if (!_isLoading)
+                            TextButton(
+                              onPressed: () {
+                                setState(() {
+                                  _isLogin = !_isLogin;
+                                });
+                              },
+                              child: Text(_isLogin
+                                  ? 'Create an account'
+                                  : 'Already have an account'),
+                            )
                         ],
                       ),
                     ),
